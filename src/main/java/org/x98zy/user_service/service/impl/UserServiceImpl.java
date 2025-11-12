@@ -5,6 +5,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.x98zy.user_service.entity.User;
+import org.x98zy.user_service.exception.BusinessRuleException;
+import org.x98zy.user_service.exception.DuplicateResourceException;
+import org.x98zy.user_service.exception.ResourceNotFoundException;
 import org.x98zy.user_service.repository.UserRepository;
 import org.x98zy.user_service.service.UserService;
 
@@ -25,7 +28,7 @@ public class UserServiceImpl implements UserService {
     public User createUser(User user) {
         // Проверка на уникальность email
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + user.getEmail() + " already exists");
+            throw new DuplicateResourceException("User with email " + user.getEmail() + " already exists");
         }
         return userRepository.save(user);
     }
@@ -52,7 +55,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUser(Long id, User userDetails) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        // Проверяем, что email не занят другим пользователем
+        if (!user.getEmail().equals(userDetails.getEmail()) &&
+                userRepository.findByEmail(userDetails.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email " + userDetails.getEmail() + " is already taken");
+        }
 
         user.setName(userDetails.getName());
         user.setSurname(userDetails.getSurname());
@@ -65,7 +74,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void activateUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setActive(true);
         userRepository.save(user);
     }
@@ -73,7 +82,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deactivateUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setActive(false);
         userRepository.save(user);
     }
@@ -81,7 +90,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         userRepository.delete(user);
     }
 
