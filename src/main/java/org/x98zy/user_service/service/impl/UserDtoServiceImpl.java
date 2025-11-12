@@ -1,5 +1,9 @@
 package org.x98zy.user_service.service.impl;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,10 @@ public class UserDtoServiceImpl implements UserDtoService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "users", allEntries = true),
+            @CacheEvict(value = "usersWithCards", allEntries = true)
+    })
     public UserDTO createUser(UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         User savedUser = userService.createUser(user);
@@ -38,6 +46,7 @@ public class UserDtoServiceImpl implements UserDtoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "#id")
     public Optional<UserDTO> getUserById(Long id) {
         return userService.getUserById(id)
                 .map(userMapper::toDTO);
@@ -45,6 +54,7 @@ public class UserDtoServiceImpl implements UserDtoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "'page_' + #pageable.pageNumber + '_size_' + #pageable.pageSize")
     public Page<UserDTO> getAllUsers(Pageable pageable) {
         return userService.getAllUsers(pageable)
                 .map(userMapper::toDTO);
@@ -52,6 +62,7 @@ public class UserDtoServiceImpl implements UserDtoService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "users", key = "'filter_' + #firstName + '_' + #lastName + '_' + #active + '_page_' + #pageable.pageNumber")
     public Page<UserDTO> getUsersByFilter(String firstName, String lastName, Boolean active, Pageable pageable) {
         // Временная реализация
         return userService.getAllUsers(pageable)
@@ -59,6 +70,11 @@ public class UserDtoServiceImpl implements UserDtoService {
     }
 
     @Override
+    @Caching(put = {
+            @CachePut(value = "users", key = "#id")
+    }, evict = {
+            @CacheEvict(value = "usersWithCards", allEntries = true)
+    })
     public UserDTO updateUser(Long id, UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         User updatedUser = userService.updateUser(id, user);
@@ -66,22 +82,36 @@ public class UserDtoServiceImpl implements UserDtoService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#id"),
+            @CacheEvict(value = "usersWithCards", allEntries = true)
+    })
     public void activateUser(Long id) {
         userService.activateUser(id);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#id"),
+            @CacheEvict(value = "usersWithCards", allEntries = true)
+    })
     public void deactivateUser(Long id) {
         userService.deactivateUser(id);
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = "users", key = "#id"),
+            @CacheEvict(value = "users", allEntries = true),
+            @CacheEvict(value = "usersWithCards", allEntries = true)
+    })
     public void deleteUser(Long id) {
         userService.deleteUser(id);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "usersWithCards")
     public List<UserDTO> getUsersWithActiveCards() {
         return userService.getUsersWithActiveCards()
                 .stream()
