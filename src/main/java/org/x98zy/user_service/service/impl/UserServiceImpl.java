@@ -26,7 +26,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createUser(User user) {
-        // Проверка на уникальность email
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new DuplicateResourceException("User with email " + user.getEmail() + " already exists");
         }
@@ -48,7 +47,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public Page<User> getUsersByFilter(String firstName, String lastName, Boolean active, Pageable pageable) {
-        // Временная реализация - потом добавим Specifications
         return userRepository.findAll(pageable);
     }
 
@@ -57,7 +55,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
-        // Проверяем, что email не занят другим пользователем
         if (!user.getEmail().equals(userDetails.getEmail()) &&
                 userRepository.findByEmail(userDetails.getEmail()).isPresent()) {
             throw new DuplicateResourceException("Email " + userDetails.getEmail() + " is already taken");

@@ -31,18 +31,15 @@ public class PaymentCardServiceImpl implements PaymentCardService {
 
     @Override
     public PaymentCard createCard(PaymentCard card) {
-        // Проверяем существование пользователя
         User user = userRepository.findById(card.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + card.getUser().getId()));
 
-        // Проверяем что у пользователя не больше 5 карт
         Long userId = card.getUser().getId();
         long cardCount = paymentCardRepository.countByUserId(userId);
         if (cardCount >= 5) {
             throw new BusinessRuleException("User cannot have more than 5 payment cards");
         }
 
-        // Проверяем что номер карты уникален
         if (paymentCardRepository.findByNumber(card.getNumber()).isPresent()) {
             throw new DuplicateResourceException("Card with number " + card.getNumber() + " already exists");
         }
@@ -66,7 +63,6 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     @Transactional(readOnly = true)
     public List<PaymentCard> getCardsByUserId(Long userId) {
-        // Проверяем существование пользователя
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
@@ -78,7 +74,6 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         PaymentCard card = paymentCardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
 
-        // Проверяем уникальность номера карты (если изменился)
         if (!card.getNumber().equals(cardDetails.getNumber()) &&
                 paymentCardRepository.findByNumber(cardDetails.getNumber()).isPresent()) {
             throw new DuplicateResourceException("Card with number " + cardDetails.getNumber() + " already exists");

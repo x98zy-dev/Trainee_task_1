@@ -45,7 +45,6 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PaymentCard> paymentCards = new ArrayList<>();
 
-    // Конструкторы
     public User() {}
 
     public User(String name, String surname, String email) {
@@ -54,7 +53,6 @@ public class User {
         this.email = email;
     }
 
-    // Геттеры и сеттеры
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -84,7 +82,6 @@ public class User {
         this.paymentCards = paymentCards;
     }
 
-    // Хелпер метод для добавления карты
     public void addPaymentCard(PaymentCard card) {
         paymentCards.add(card);
         card.setUser(this);

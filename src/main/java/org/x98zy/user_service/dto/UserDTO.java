@@ -26,10 +26,8 @@ public class UserDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Конструкторы, геттеры и сеттеры
     public UserDTO() {}
 
-    // Геттеры и сеттеры...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

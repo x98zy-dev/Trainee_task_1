@@ -41,7 +41,6 @@ public class PaymentCard {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Конструкторы
     public PaymentCard() {}
 
     public PaymentCard(String number, String holder, LocalDate expirationDate) {
@@ -50,7 +49,6 @@ public class PaymentCard {
         this.expirationDate = expirationDate;
     }
 
-    // Геттеры и сеттеры
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

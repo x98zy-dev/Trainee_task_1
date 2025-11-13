@@ -15,23 +15,18 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
-    // Named method - найти по email
     Optional<User> findByEmail(String email);
 
-    // Named method - найти всех активных пользователей
     List<User> findByActiveTrue();
 
-    // JPQL - найти пользователей по имени и фамилии
     @Query("SELECT u FROM User u WHERE u.name = :name AND u.surname = :surname")
     List<User> findByNameAndSurname(@Param("name") String name, @Param("surname") String surname);
 
-    // Native SQL - найти пользователей с картами
     @Query(value = "SELECT DISTINCT u.* FROM users u " +
             "JOIN payment_cards pc ON u.id = pc.user_id " +
             "WHERE pc.active = true",
             nativeQuery = true)
     List<User> findUsersWithActiveCards();
 
-    // Пагинация с фильтрацией через Specification (будет в Service)
     Page<User> findAll(Pageable pageable);
 }

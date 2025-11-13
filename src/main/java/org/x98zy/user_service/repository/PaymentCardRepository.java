@@ -16,28 +16,21 @@ import java.util.Optional;
 @Repository
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
 
-    // Named method - найти все карты пользователя
     List<PaymentCard> findByUserId(Long userId);
 
-    // Named method - найти активные карты пользователя
     List<PaymentCard> findByUserIdAndActiveTrue(Long userId);
 
-    // Named method - найти по номеру карты
     Optional<PaymentCard> findByNumber(String number);
 
-    // JPQL - обновить статус карты
     @Modifying
     @Query("UPDATE PaymentCard p SET p.active = :active WHERE p.id = :id")
     void updateCardStatus(@Param("id") Long id, @Param("active") Boolean active);
 
-    // Native SQL - найти карты по имени держателя
     @Query(value = "SELECT * FROM payment_cards WHERE holder ILIKE %:holderName%",
             nativeQuery = true)
     List<PaymentCard> findByHolderName(@Param("holderName") String holderName);
 
-    // Пагинация
     Page<PaymentCard> findAll(Pageable pageable);
 
-    // Подсчитать карты пользователя
     long countByUserId(Long userId);
 }
