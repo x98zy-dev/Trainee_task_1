@@ -1,0 +1,107 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: card_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build application
+        run: mvn clean compile -DskipTests
+
+      - name: Run unit tests
+        run: mvn test -Dtest=*ServiceTest
+
+      - name: Run integration tests
+        run: mvn test -Dtest=*IntegrationTest
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: Build JAR package
+        run: mvn clean package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t user-service:latest .
+
+      - name: Test Docker image
+        run: |
+          docker run -d --name test-container -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=docker \
+            -e DB_URL=jdbc:postgresql://localhost:5432/card_db \
+            -e DB_USERNAME=postgres \
+            -e DB_PASSWORD=password \
+            -e REDIS_HOST=localhost \
+            user-service:latest
+          sleep 30
+          docker logs test-container
+          curl -f http://localhost:8080/actuator/health || exit 1
+          docker stop test-container
+          docker rm test-container
+
+  sonar-analysis:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build and run SonarCloud analysis
+        run: mvn clean verify sonar:sonar -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
